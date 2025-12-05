@@ -1,0 +1,20 @@
+Os principais arquivos são descritos abaixo:
+
+1. blackjack.py: arquivo principal
+2. player.py: agente aleatório
+   PlayerRL.py: agente com Reinforcement Learning
+3. utils.py: funções utilitárias
+4. dealer.py: não utilizada
+5. gen_cards.py: geração de cartas (não necessário)
+
+Dependências:
+
+pygame, random e itertools
+
+Executar:
+
+- Digitar "python blackjack.py"
+
+Bugs:
+
+Caso encontre algum problema, entre em contato com o professor
