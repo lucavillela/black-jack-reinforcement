@@ -11,7 +11,9 @@ class RLAgent:
     # Discount factor - Balanço entre priorizar recompensas futuras e atuais
     self.gamma = 0.9
     # Exploration rate - epsilon greedy
-    self.epsilon = 0.1
+    self.epsilon = 1
+    self.epsilon_min = 0.01
+    self.epsilon_decay = 0.9995 # decai exploracao com cada rodada
     # Lembrando a ultima acao
     self.last_opponent_action = None
     # Flag indicando se essa seria a ultima rodada
@@ -23,14 +25,15 @@ class RLAgent:
     self.current_input = None
     self.current_output = None    
     
-  def extract_rl_state(self, your_hand):
-    # versão bem básica onde apenas verificamos se o total
-    # em nossa mão é maior que 17, assim podemos
-    # ter uma característica para indicar se tem
-    # uma chance de 'estourar' a mão mas isso 
-    # não leva em conta várias pontos importantes 
-    # Você pode inserir mais estados depois da vírgula
-    return (int(calculate_hand_value(your_hand) > 17), self.has_rerolled);
+  def extract_rl_state(self, your_hand, dealer_hand):
+    
+    player_val = calculate_hand_value(your_hand)
+    
+    dealer_val = calculate_hand_value(dealer_hand)
+    
+    reroll_status = self.has_rerolled 
+
+    return (player_val, dealer_val, reroll_status)
  
   def choose_action(self, state):
      
@@ -50,29 +53,31 @@ class RLAgent:
     alp = self.alpha
     gam = self.gamma
     action_index = self.action_list.index(action)
-    self.Q[state][action_index] = (1 - alp) * self.Q[state][action_index] + alp * (reward + gam * np.max(self.Q[next_state]))  
+    self.Q[state][action_index] = (1 - alp) * self.Q[state][action_index] + alp * (reward + gam * np.max(self.Q[next_state]))
+    if self.epsilon > self.epsilon_min:
+        self.epsilon *= self.epsilon_decay  
     
   # Essa função toma a decisão após observar
   # o estado observável do campo
-  def decision(self, your_hand, dealer_first_card):
+  def decision(self, your_hand, dealer_hand):
     player_hand = [d for d in your_hand]
     if len(player_hand) == 0:
         self.has_rerolled = 0
         
     print("======== Start of turn =======")
-    print(f"Player hand: {player_hand} vs dealer {dealer_first_card}, ...", ) 
-    state = self.extract_rl_state(your_hand=your_hand)
+    print(f"Player hand: {player_hand} vs dealer {dealer_hand}, ...", ) 
+    state = self.extract_rl_state(your_hand=your_hand, dealer_hand=dealer_hand)
     choice = self.choose_action(state)
     print(f"You made the decision '{choice}'")
     return choice
 
   # Essa função deveria atualiza QTable
-  def result(self, your_hand, dealer_first_card, decision, reward, is_not_done):
+  def result(self, your_hand, dealer_hand, decision, reward, is_not_done):
     player_hand = [d for d in your_hand]
     game_status = "still going" if is_not_done else "is done"
     print(f"{your_hand=}")
-    state = self.extract_rl_state(your_hand=your_hand[:-1])
-    next_state = self.extract_rl_state(your_hand=your_hand)
+    state = self.extract_rl_state(your_hand=your_hand[:-1], dealer_hand=dealer_hand)
+    next_state = self.extract_rl_state(your_hand=your_hand, dealer_hand=dealer_hand)
     self.update_qtable(state, decision, reward, next_state)
     self.print_q_table(self.Q)
     print(f"Your hand ({calculate_hand_value(your_hand)}) after decision '{decision}' with {reward=} and game {game_status}")
